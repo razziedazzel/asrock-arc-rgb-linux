@@ -1,10 +1,8 @@
 # asrock-arc-rgb-linux
 
-Control the RGB lighting on **ASRock Intel Arc** graphics cards from Linux — no Windows,
-no Polychrome Sync, no extra drivers. Includes a command-line tool, a GTK 4 app, and an
+Control the RGB lighting on **ASRock Intel Arc** graphics cards from Linux without Polychrome Sync or extra drivers. Includes a command-line tool, a GTK 4 app, and an
 optional service that re-applies your lighting at boot and after resume.
 
-> Unofficial project. Not affiliated with or endorsed by ASRock or Intel.
 > Use at your own risk.
 
 ## Supported cards
