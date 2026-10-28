@@ -37,6 +37,10 @@ MODES = [
 # all-channel direct mode. parse_mode() refuses them.
 # Polychrome only sends a speed for these modes. Speed is a frame divider: higher = slower.
 SPEED_MODES = set(range(2, 6)) | set(range(7, 16))
+# The firmware ignores the brightness byte in these modes (Static tested on the B580;
+# brightness does apply in effects such as Breathing)
+NO_BRIGHTNESS_MODES = {0, 1}
+STATIC_BRIGHTNESS_NOTE = "Static ignores brightness on this card; pick a darker colour instead"
 FACTORY = dict(mode=0x0F, rgb=(0x00, 0x00, 0xFF), speed=0x80, brightness=0xFF)
 # Writing too fast can make the controller stop answering until a full power-off
 # (seen on ASRock's Radeon cards, OpenRGB !3735; Polychrome waits up to 200 ms).
@@ -438,6 +442,8 @@ def main():
         elif args.cmd == "factory":
             led.set(ch, FACTORY["mode"], FACTORY["rgb"], FACTORY["speed"], FACTORY["brightness"])
         else:
+            if args.brightness is not None and (cur["mode"] if args.mode is None else args.mode) in NO_BRIGHTNESS_MODES:
+                print(f"Note: {STATIC_BRIGHTNESS_NOTE}.")
             led.set(ch,
                     cur["mode"] if args.mode is None else args.mode,
                     cur["rgb"] if args.color is None else args.color,

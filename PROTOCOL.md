@@ -78,7 +78,7 @@ values **per channel**; per-LED patterns come from the built-in effects.
 | 3 | `MODE` | see §5 |
 | 4–6 | `R G B` | 0–255 each |
 | 7 | `SPEED` | 0–255, **higher = slower** (effect steps every `SPEED/10 + 5` frames). Factory `0x80` |
-| 8 | `BRIGHT` | 0–255, scales every LED's colour. ASRock's app always sends `0xFF` |
+| 8 | `BRIGHT` | 0–255, scales the colour in **effects** (e.g. Breathing: **tested**). **Ignored in Static** (**tested**: `0x33` stored and read back, LEDs stayed at full brightness). ASRock's app always sends `0xFF` |
 | 9 | `SYNC` | `0` = this channel only. `1` = firmware applies the effect to all channels (**firmware**) |
 | 10 | `MUSIC` | audio level for mode 6 (Music) only; host must keep sending it (**firmware**, meaning of scale unknown) |
 

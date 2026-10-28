@@ -224,7 +224,11 @@ class Window(Adw.ApplicationWindow):
         self.update_speed_sensitivity()
 
     def update_speed_sensitivity(self):
-        self.speed_row.set_sensitive(self.mode_row.get_selected() in arc_rgb.SPEED_MODES)
+        mode = self.mode_row.get_selected()
+        self.speed_row.set_sensitive(mode in arc_rgb.SPEED_MODES)
+        no_brightness = mode in arc_rgb.NO_BRIGHTNESS_MODES
+        self.brightness_row.set_sensitive(not no_brightness)
+        self.brightness_row.set_subtitle(arc_rgb.STATIC_BRIGHTNESS_NOTE if mode == 1 else "")
 
     def update_dirty(self):
         dirty = self.saved is None or self.saved != self.settings
