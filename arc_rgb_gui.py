@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """GTK 4 front end for arc_rgb: live-edit the card's lighting and save it for boot."""
+import getpass
 import os
 import sys
 
@@ -7,7 +8,7 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Adw, Gdk, GLib, Gtk  # noqa: E402
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import arc_rgb  # noqa: E402
@@ -17,6 +18,7 @@ PRESETS = [
     ("Cyan", "00ffff"), ("Blue", "0000ff"), ("Purple", "8000ff"), ("White", "ffffff"),
 ]
 EFFECT_FIELDS = ("mode", "rgb", "speed", "brightness")
+CLI = os.path.realpath(arc_rgb.__file__)
 
 
 def rgba_from_rgb(rgb):
@@ -47,7 +49,7 @@ class Window(Adw.ApplicationWindow):
         header = Adw.HeaderBar()
         self.save_btn = Gtk.Button(label="Save")
         self.save_btn.add_css_class("suggested-action")
-        self.save_btn.set_tooltip_text("Apply this lighting at every boot and after resume")
+        self.save_btn.set_tooltip_text("Save this lighting (used by the boot service)")
         self.save_btn.connect("clicked", self.on_save)
         self.revert_btn = Gtk.Button(icon_name="edit-undo-symbolic", tooltip_text="Revert to saved")
         self.revert_btn.connect("clicked", self.on_revert)
@@ -112,17 +114,21 @@ class Window(Adw.ApplicationWindow):
         self.swap_row.connect("notify::active", self.on_hw_edit)
         self.hw_group.add(self.swap_row)
 
+        # ---- keep my lighting ----
+        keep = Adw.PreferencesGroup(title="Keep my lighting")
+        page.add(keep)
+        self.service_row = Adw.SwitchRow(title="Re-apply at boot and after resume",
+                                         subtitle="Uses your saved setting. Asks for your password.")
+        self.service_row.connect("notify::active", self.on_service_toggled)
+        keep.add(self.service_row)
+        keep.add(self.action_row("Store on card…", self.on_store,
+                                 "Saves into the card itself, so it shows from power-on"))
+
         # ---- actions ----
         actions = Adw.PreferencesGroup()
         page.add(actions)
-        # Plain activatable rows rather than Adw.ButtonRow, which needs libadwaita 1.6
-        for title, handler in (("Turn off", lambda *_: self.set_mode_everywhere(0)),
-                               ("Factory effect", self.on_factory),
-                               ("Store on card…", self.on_store)):
-            row = Adw.ActionRow(title=title, activatable=True)
-            row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
-            row.connect("activated", handler)
-            actions.add(row)
+        actions.add(self.action_row("Turn off", lambda *_: self.set_mode_everywhere(0)))
+        actions.add(self.action_row("Factory effect", self.on_factory))
 
         view.set_content(page)
         self.toasts.set_child(view)
@@ -135,6 +141,15 @@ class Window(Adw.ApplicationWindow):
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), css,
                                                   Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         self.connect_card()
+
+    def action_row(self, title, handler, subtitle=None):
+        # Plain activatable row rather than Adw.ButtonRow, which needs libadwaita 1.6
+        row = Adw.ActionRow(title=title, activatable=True)
+        if subtitle:
+            row.set_subtitle(subtitle)
+        row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        row.connect("activated", handler)
+        return row
 
     def slider_row(self, title, lo, hi, unit):
         row = Adw.ActionRow(title=title)
@@ -166,6 +181,17 @@ class Window(Adw.ApplicationWindow):
         self.channel_row.set_selected(0)
         self.load_controls()
         self.update_dirty()
+        self.refresh_service_state()
+
+    def refresh_service_state(self):
+        self.loading = True
+        if arc_rgb.service_installed():
+            self.service_row.set_active(arc_rgb.service_enabled(getpass.getuser()))
+        else:
+            self.service_row.set_active(False)
+            self.service_row.set_sensitive(False)
+            self.service_row.set_subtitle("Not available: install the package or run install.sh")
+        self.loading = False
 
     def selected_channels(self):
         idx = self.channel_row.get_selected()
@@ -275,12 +301,42 @@ class Window(Adw.ApplicationWindow):
         arc_rgb.save_config(self.settings)
         self.saved = copy_settings(self.settings)
         self.update_dirty()
-        self.toasts.add_toast(Adw.Toast(title="Saved — applied at boot and after resume"))
+        self.toasts.add_toast(Adw.Toast(title="Saved"))
 
     def on_revert(self, *_):
         self.settings = {ch: dict(s) for ch, s in copy_settings(self.saved).items() if ch in self.settings}
         self.push(self.settings, hardware=True)
         self.load_controls()
+
+    def on_service_toggled(self, row, _pspec):
+        if self.loading:
+            return
+        enable = row.get_active()
+        if enable and (self.saved is None or self.saved != self.settings):
+            self.on_save()  # the service applies the saved setting, so save what's on screen
+        row.set_sensitive(False)
+        argv = ["pkexec", CLI, "service", "enable" if enable else "disable",
+                "--user", getpass.getuser()]
+        try:
+            proc = Gio.Subprocess.new(argv, Gio.SubprocessFlags.STDERR_PIPE)
+        except GLib.Error as e:
+            self.toasts.add_toast(Adw.Toast(title=f"Could not run pkexec: {e.message}"))
+            row.set_sensitive(True)
+            self.refresh_service_state()
+            return
+        proc.communicate_utf8_async(None, None, self.on_service_done, enable)
+
+    def on_service_done(self, proc, result, enable):
+        _ok, _out, err = proc.communicate_utf8_finish(result)
+        self.service_row.set_sensitive(True)
+        self.refresh_service_state()
+        if proc.get_exit_status() == 0:
+            msg = "Lighting will be re-applied at boot" if enable else "Boot service turned off"
+        elif proc.get_exit_status() in (126, 127):  # pkexec: dialog dismissed / not authorised
+            msg = "Cancelled"
+        else:
+            msg = f"Failed: {(err or '').strip().splitlines()[-1] if err else 'unknown error'}"
+        self.toasts.add_toast(Adw.Toast(title=msg))
 
     def on_store(self, *_):
         dlg = Adw.AlertDialog(
@@ -307,7 +363,7 @@ class Window(Adw.ApplicationWindow):
 
 class App(Adw.Application):
     def __init__(self):
-        super().__init__(application_id="local.arcrgb")
+        super().__init__(application_id=arc_rgb.APP_ID)
 
     def do_activate(self):
         win = self.get_active_window() or Window(self)

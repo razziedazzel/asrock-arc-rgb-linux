@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a3f4b"/>
+      <stop offset="1" stop-color="#1e2129"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff3b3b"/>
+      <stop offset="0.2" stop-color="#ffb000"/>
+      <stop offset="0.4" stop-color="#3ddc5a"/>
+      <stop offset="0.6" stop-color="#20c8ff"/>
+      <stop offset="0.8" stop-color="#4b5bff"/>
+      <stop offset="1" stop-color="#d040ff"/>
+    </linearGradient>
+  </defs>
+  <!-- graphics card body -->
+  <rect x="8" y="30" width="112" height="68" rx="10" fill="url(#card)"/>
+  <!-- RGB light bar along the top edge -->
+  <rect x="16" y="36" width="96" height="6" rx="3" fill="url(#glow)"/>
+  <!-- two fans -->
+  <g fill="none" stroke="url(#glow)" stroke-width="4">
+    <circle cx="40" cy="70" r="18"/>
+    <circle cx="88" cy="70" r="18"/>
+  </g>
+  <g fill="#8a90a0">
+    <circle cx="40" cy="70" r="5"/>
+    <circle cx="88" cy="70" r="5"/>
+  </g>
+  <g stroke="#5b6170" stroke-width="3" stroke-linecap="round">
+    <path d="M40 57v8M40 75v8M27 70h8M45 70h8"/>
+    <path d="M88 57v8M88 75v8M75 70h8M93 70h8"/>
+  </g>
+  <!-- PCIe connector -->
+  <rect x="30" y="98" width="60" height="8" rx="2" fill="#c9a24a"/>
+</svg>

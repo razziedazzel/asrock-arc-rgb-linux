@@ -28,17 +28,36 @@ Check yours with `lspci -nnv -d 8086: | grep -i subsystem`.
 
 ## Install
 
-```sh
-git clone https://github.com/razziedazzel/asrock-arc-rgb-linux.git
-cd asrock-arc-rgb-linux
-sudo ./install.sh            # add --no-service to skip the boot/resume service
-```
+**Linux Mint / Ubuntu / Debian:** download `asrock-arc-rgb_<version>_all.deb` from the
+[Releases](https://github.com/razziedazzel/asrock-arc-rgb-linux/releases) page and open it,
+or run `sudo apt install ./asrock-arc-rgb_<version>_all.deb`.
 
-This installs `arc-rgb` and `arc-rgb-gui` to `/usr/local/bin`, an **Arc RGB** menu entry,
-a udev rule so your user can reach the controller without root, and
-`arc-rgb@<you>.service`. Log out and back in so the udev permission applies. `sudo ./uninstall.sh` removes everything except your saved settings.
+**Fedora:** download `asrock-arc-rgb-<version>-1.noarch.rpm` and run
+`sudo dnf install ./asrock-arc-rgb-<version>-1.noarch.rpm`.
 
-You can also run straight from the checkout: `./arc_rgb.py status`, `./arc_rgb_gui.py`.
+Either package gives you:
+
+- the **Arc RGB** app in your applications menu, and the `arc-rgb` command,
+- a udev rule so your user can reach the LED controller without root,
+- the `i2c-dev` module loaded at boot,
+- an optional boot/resume service, **off by default** (see below).
+
+Log out and back in once after installing so the new permission applies.
+
+**From source:** `git clone` this repo and run `sudo ./install.sh` (installs to `/usr/local`;
+`sudo ./uninstall.sh` removes it). You can also run `./arc_rgb.py` / `./arc_rgb_gui.py`
+straight from the checkout.
+
+### Keeping your lighting
+
+Two options; use either or both:
+
+- **Store on card** (app) / `arc-rgb store` — writes the lighting into the LED controller's
+  flash, so the card shows it from power-on with no software running.
+- **Re-apply at boot and after resume** (app switch, asks for your password) /
+  `sudo arc-rgb service enable` — a systemd service re-sends your saved setting
+  (`~/.config/arc-rgb/config.json`) at boot and after waking from sleep.
+  `sudo arc-rgb service disable` turns it off; `arc-rgb service status` shows it.
 
 ## Usage
 
@@ -63,8 +82,8 @@ cram, scan, neon, water, rainbow, rainbow2, glowstream, luminoustide.
 ### The app
 
 Pick a zone (or all), effect, colour, brightness and speed — changes show on the card
-immediately. **Save** stores the setting for the boot/resume service; **Store on card**
-writes it into the LED controller's flash so the card shows it from power-on.
+immediately. **Save** keeps the setting for the boot/resume service; the
+**Keep my lighting** section has the service switch and **Store on card**.
 
 ## How it works
 
@@ -83,6 +102,12 @@ controller firmware it ships. No ASRock software or firmware is included in this
   effects.
 - Music mode needs the host to stream an audio level; not implemented yet.
 - Fan control is not done by this controller (it's in the GPU firmware), so it isn't here.
+
+## Building packages
+
+`packaging/build-deb.sh VERSION` and `packaging/build-rpm.sh VERSION` write to `dist/`
+(needs `dpkg-deb` / `rpmbuild`). Pushing a `vX.Y.Z` tag that matches `__version__` in
+`arc_rgb.py` makes GitHub Actions build both and publish a release.
 
 ## License
 

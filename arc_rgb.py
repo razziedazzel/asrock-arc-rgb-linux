@@ -14,14 +14,18 @@ import glob
 import json
 import os
 import pwd
+import subprocess
 import sys
 import time
+
+__version__ = "0.2.0"
 
 ADDR = 0x36
 I2C_RDWR = 0x0707
 I2C_M_RD = 0x0001
 SUPPORTED_SUBSYS = {(0x1849, 0x6001), (0x1849, 0x6010), (0x1849, 0x6020)}
 CONFIG_PATH = os.path.expanduser("~/.config/arc-rgb/config.json")
+APP_ID = "io.github.razziedazzel.ArcRGB"
 
 MODES = [
     "off", "static", "breathing", "strobe", "cycling", "random", "music", "wave",
@@ -267,8 +271,58 @@ def save_config(settings, path=CONFIG_PATH):
     os.replace(tmp, path)
 
 
+def config_path_for(user):
+    return os.path.join(pwd.getpwnam(user).pw_dir, ".config/arc-rgb/config.json")
+
+
+def invoking_user():
+    """The human behind this process, even when run through sudo or pkexec."""
+    if os.environ.get("PKEXEC_UID"):
+        return pwd.getpwuid(int(os.environ["PKEXEC_UID"])).pw_name
+    if os.environ.get("SUDO_USER"):
+        return os.environ["SUDO_USER"]
+    return pwd.getpwuid(os.getuid()).pw_name
+
+
+def service_unit(user):
+    return f"arc-rgb@{user}.service"
+
+
+def service_installed():
+    return any(os.path.exists(f"{d}/arc-rgb@.service")
+               for d in ("/etc/systemd/system", "/usr/local/lib/systemd/system", "/usr/lib/systemd/system"))
+
+
+def service_enabled(user):
+    return subprocess.run(["systemctl", "is-enabled", "--quiet", service_unit(user)]).returncode == 0
+
+
+def service_command(action, user):
+    """enable / disable / status of the boot+resume service. enable/disable need root."""
+    pwd.getpwnam(user)  # raises KeyError for unknown users
+    unit = service_unit(user)
+    if action == "status":
+        state = "enabled" if service_enabled(user) else "disabled"
+        print(f"{unit}: {state}{'' if service_installed() else ' (service not installed)'}")
+        return 0
+    if os.geteuid() != 0:
+        sys.exit(f"'{action}' needs root: sudo arc-rgb service {action}")
+    if not service_installed():
+        sys.exit("arc-rgb@.service is not installed (install the package or run install.sh).")
+    if action == "enable":
+        subprocess.run(["systemctl", "enable", unit], check=True)
+        if os.path.exists(config_path_for(user)):
+            subprocess.run(["systemctl", "start", unit], check=False)
+        else:
+            print(f"Note: nothing saved yet for {user}; save a setting (app 'Save' or 'set --save').")
+    else:
+        subprocess.run(["systemctl", "disable", unit], check=True)
+    return 0
+
+
 def main():
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(prog="arc-rgb", description=__doc__.splitlines()[0])
+    ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("--bus", help="I2C device, e.g. /dev/i2c-12 (default: auto-detect)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
@@ -290,9 +344,20 @@ def main():
     a.add_argument("--config", help=f"config file (default: {CONFIG_PATH})")
     a.add_argument("--user", help="use this user's saved config (for the boot service)")
     a.add_argument("--wait", type=float, default=0, help="seconds to wait for the card to appear")
+    sv = sub.add_parser("service", help="enable/disable re-applying the saved setting at boot and resume")
+    sv.add_argument("action", choices=["enable", "disable", "status"])
+    sv.add_argument("--user", help="whose saved setting to apply (default: the invoking user)")
     st = sub.add_parser("store", help="write the current lighting into the controller's flash")
     st.add_argument("--yes", action="store_true", help="don't ask for confirmation")
     args = ap.parse_args()
+
+    if args.cmd == "service":
+        try:
+            return service_command(args.action, args.user or invoking_user())
+        except KeyError:
+            sys.exit(f"unknown user: {args.user}")
+        except subprocess.CalledProcessError as e:
+            sys.exit(f"systemctl failed: {e}")
 
     if args.cmd == "modes":
         for i, n in enumerate(MODES):
@@ -317,9 +382,7 @@ def main():
         return
 
     if args.cmd == "apply":
-        path = args.config or CONFIG_PATH
-        if args.user:
-            path = os.path.join(pwd.getpwnam(args.user).pw_dir, ".config/arc-rgb/config.json")
+        path = args.config or (config_path_for(args.user) if args.user else CONFIG_PATH)
         cfg = load_config(path)
         if cfg is None:
             sys.exit(f"No saved config at {path}")
@@ -368,4 +431,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

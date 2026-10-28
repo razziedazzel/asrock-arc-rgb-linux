@@ -1,8 +1,11 @@
 [Desktop Entry]
 Type=Application
 Name=Arc RGB
+GenericName=RGB Lighting Control
 Comment=Control the RGB lighting on ASRock Intel Arc graphics cards
 Exec=arc-rgb-gui
-Icon=preferences-desktop-color
+Icon=io.github.razziedazzel.ArcRGB
 Categories=Settings;HardwareSettings;
+Keywords=RGB;LED;lighting;ASRock;Arc;GPU;graphics;
+StartupNotify=true
 Terminal=false

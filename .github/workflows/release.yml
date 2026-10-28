@@ -1,0 +1,46 @@
+name: Build packages
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install rpmbuild
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Check sources
+        run: |
+          python3 -m py_compile arc_rgb.py arc_rgb_gui.py
+          python3 arc_rgb.py --version
+
+      - name: Build .deb and .rpm
+        run: |
+          VERSION=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' arc_rgb.py)
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match __version__ $VERSION in arc_rgb.py" >&2
+            exit 1
+          fi
+          packaging/build-deb.sh "$VERSION"
+          packaging/build-rpm.sh "$VERSION"
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: dist/*
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes
