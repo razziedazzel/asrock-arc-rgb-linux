@@ -107,8 +107,9 @@ immediately. **Save** keeps the setting for the boot/resume service; the
 
 The LED controller is a small Nuvoton-family microcontroller at I2C address `0x36` on the
 GPU's own DesignWare I2C bus. Every command is a 12-byte write; queries are followed by a
-12-byte read. The full protocol — commands, record layout, firmware notes, and the
-commands you must **never** send (bootloader/ISP) — is in [PROTOCOL.md](PROTOCOL.md).
+12-byte read. **[PROTOCOL.md](PROTOCOL.md)** is a standalone reference for driving the
+controller from your own software: how to find it, every command and reply byte, timing,
+worked `i2ctransfer` and C examples, and the commands you must **never** send.
 
 It was worked out for interoperability by studying ASRock Polychrome Sync and the LED
 controller firmware it ships. No ASRock software or firmware is included in this repository.
