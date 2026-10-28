@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+# Never commit vendor software or firmware
+*.exe
+*.dll
+*.sys
+*.bin
+*.dat
+*.zip

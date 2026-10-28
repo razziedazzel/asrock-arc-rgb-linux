@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply saved ASRock Arc RGB lighting for %i
+After=systemd-modules-load.service suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+
+[Service]
+Type=oneshot
+ExecStartPre=-/usr/sbin/modprobe i2c-dev
+ExecStart=/usr/local/bin/arc-rgb apply --user %i --wait 30
+
+[Install]
+WantedBy=multi-user.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target

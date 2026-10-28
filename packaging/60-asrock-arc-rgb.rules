@@ -1,0 +1,3 @@
+# Let the logged-in user reach the LED controller on supported ASRock Arc cards.
+# The controller sits on the GPU's own I2C adapter (xe driver, i2c_designware).
+SUBSYSTEM=="i2c-dev", ATTRS{subsystem_vendor}=="0x1849", ATTRS{subsystem_device}=="0x6001|0x6010|0x6020", TAG+="uaccess"
