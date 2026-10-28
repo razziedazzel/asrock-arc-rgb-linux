@@ -38,8 +38,10 @@ apply unchanged.
 
 ## 2. Transactions
 
-- **Every command is one 12-byte I2C write**, zero-padded. (Exception: the direct-colour
-  packet in §4.3 is longer.)
+- **Every command is one 12-byte I2C write**, zero-padded. The controller's receiver
+  completes a command after exactly 12 bytes and treats any further bytes in the same
+  write as the start of a **new** command, so never write more than 12 bytes at once.
+  (**firmware**, consistent with the §4.3 test)
 - **Queries** are a 12-byte write followed by a *separate* 12-byte read (stop between them,
   not a repeated-start combined transfer). **tested**
 - Reply layout: bytes 0–2 are `00`, **byte 3 echoes the argument** (channel or sub-command),
@@ -94,7 +96,7 @@ read : 00 00 00 CH MODE R G B SPEED BRIGHT SYNC ..
 | MODE | Meaning |
 |---|---|
 | `0xE1` (also `0x11`) | Same colour/speed/brightness on **all** channels at once (bytes 4–8). Rendered as static. |
-| `0xE2` | **Direct per-channel colour**: 52-byte write `10 00 00 E2` followed by 16 × `R G B` (channel 0 first). Every channel shows its own static colour. Good for host-driven animation. |
+| `0xE2` | Intended as per-channel colours (`10 00 00 E2` + 16 × `R G B`), but **not usable over I2C**: the handler reads 52 bytes from a 12-byte receive buffer, so only channels 0–1 get real data and the rest get stale memory. **Tested**: on a B580 the logo showed a dim green from leftover bytes and the fans went dark. |
 
 ### 4.4 Get / set settings — `0x14` / `0x15`
 
@@ -134,6 +136,7 @@ it in a loop.
 | `20 00 01 …` | Jumps to the bootloader; the controller stops running the LED firmware |
 | Commands `0xA1`–`0xD0` | Bootloader / firmware erase and programming |
 | `15 00 01 …` | Rewrites the present-channel mask |
+| Anything longer than 12 bytes | Split by the controller into several commands (see §2) |
 
 ## 5. Modes
 
@@ -206,6 +209,6 @@ int get_channel(int fd, int ch, unsigned char reply[12]) {
 
 - Settings sub-commands 6, 8, 9 and 10, and the scale of the Music-mode level byte.
 - Whether the A770 boards use the same channel numbers.
-- The direct-colour packet (`0xE2`) and `SYNC = 1` have not yet been exercised on hardware.
+- `SYNC = 1` and `0xE1` have not yet been exercised on hardware.
 
 Corrections and reports from other ASRock Arc cards are welcome via issues.
