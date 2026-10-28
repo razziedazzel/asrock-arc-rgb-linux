@@ -19,7 +19,7 @@ import subprocess
 import sys
 import time
 
-__version__ = "0.2.0"
+__version__ = "0.2.2"
 
 ADDR = 0x36
 I2C_RDWR = 0x0707
@@ -31,8 +31,10 @@ APP_ID = "io.github.razziedazzel.ArcRGB"
 MODES = [
     "off", "static", "breathing", "strobe", "cycling", "random", "music", "wave",
     "spring", "stack", "cram", "scan", "neon", "water", "rainbow", "rainbow2",
-    "glowstream", "luminoustide",
 ]
+# Mode IDs past the list are not effects on this controller: 0x10 locks the MCU up until a
+# full power-off (reported on an RX 9070 XT, OpenRGB #5979) and 0x11 is the firmware's
+# all-channel direct mode. parse_mode() refuses them.
 # Polychrome only sends a speed for these modes. Speed is a frame divider: higher = slower.
 SPEED_MODES = set(range(2, 6)) | set(range(7, 16))
 FACTORY = dict(mode=0x0F, rgb=(0x00, 0x00, 0xFF), speed=0x80, brightness=0xFF)
@@ -194,6 +196,8 @@ def parse_color(s):
 
 def parse_mode(s):
     if str(s).isdigit():
+        if int(s) >= len(MODES):
+            raise argparse.ArgumentTypeError(f"mode must be 0-{len(MODES) - 1}")
         return int(s)
     try:
         return MODES.index(s.lower())

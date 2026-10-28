@@ -133,6 +133,7 @@ it in a loop.
 
 | Packet | Effect |
 |---|---|
+| `10 00 CH 10 …` (mode `0x10`) | Locks the controller up until a full power-off (reported on an RX 9070 XT) |
 | `20 00 01 …` | Jumps to the bootloader; the controller stops running the LED firmware |
 | Commands `0xA1`–`0xD0` | Bootloader / firmware erase and programming |
 | `15 00 01 …` | Rewrites the present-channel mask |
@@ -149,8 +150,13 @@ it in a loop.
 | 4 | Cycling | ✓ | 13 | Water | ✓ |
 | 5 | Random | ✓ | 14 | Rainbow | ✓ |
 | 6 | Music (host sends level) | | 15 | Rainbow2 (factory default) | ✓ |
-| 7 | Wave | ✓ | 16 | GlowStream | |
-| 8 | Spring | ✓ | 17 | LuminousTide (ASRock's app substitutes 14 on these cards) | |
+| 7 | Wave | ✓ | | | |
+| 8 | Spring | ✓ | | | |
+
+**Never use mode `0x10`**: it locks the controller up until a full power-off (reported on an
+RX 9070 XT Steel Legend in OpenRGB #5979). `0x11` is the all-channel direct mode (§4.3), not an
+effect. Polychrome's menu lists "GlowStream" and "LuminousTide" at 16 and 17, but that list is
+shared with ASRock motherboards and those IDs do not mean that on the graphics card.
 
 ## 6. Examples
 

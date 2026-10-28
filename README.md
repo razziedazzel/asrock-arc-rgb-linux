@@ -93,7 +93,7 @@ Zones on the B580 Steel Legend: **logo** (the "Steel Legend" lettering, 26 LEDs)
 **fans** (26 LEDs) and **argbheader** (onboard ARGB header, up to 80 LEDs).
 
 Effects: off, static, breathing, strobe, cycling, random, music, wave, spring, stack,
-cram, scan, neon, water, rainbow, rainbow2, glowstream, luminoustide.
+cram, scan, neon, water, rainbow, rainbow2.
 
 ### The app
 
