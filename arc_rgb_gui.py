@@ -273,7 +273,7 @@ class Window(Adw.ApplicationWindow):
         # Coalesce rapid slider/colour drags into one write burst
         if self.pending:
             GLib.source_remove(self.pending)
-        self.pending = GLib.timeout_add(60, self.flush, settings, hardware)
+        self.pending = GLib.timeout_add(150, self.flush, settings, hardware)
 
     def flush(self, settings, hardware):
         self.pending = None

@@ -9,6 +9,7 @@ the current lighting into the controller's flash.
 """
 import argparse
 import ctypes
+import errno
 import fcntl
 import glob
 import json
@@ -35,6 +36,9 @@ MODES = [
 # Polychrome only sends a speed for these modes. Speed is a frame divider: higher = slower.
 SPEED_MODES = set(range(2, 6)) | set(range(7, 16))
 FACTORY = dict(mode=0x0F, rgb=(0x00, 0x00, 0xFF), speed=0x80, brightness=0xFF)
+# Writing too fast can make the controller stop answering until a full power-off
+# (seen on ASRock's Radeon cards, OpenRGB !3735; Polychrome waits up to 200 ms).
+MIN_WRITE_GAP = 0.03
 # Identified on the B580 Steel Legend by lighting each channel separately
 ZONE_NAMES = {3: "ARGB header", 6: "Logo", 7: "Fans"}
 # LED counts the firmware ships with. Raising a count past this could overrun the
@@ -90,19 +94,37 @@ class LedCtrl:
         self.dev = dev or find_bus(wait)
         self.fd = os.open(self.dev, os.O_RDWR)
         self._present = None
+        self._last_write = 0.0
+        self._last_set = {}       # channel -> last 0x10 packet sent, to skip repeats
+        self._failures = 0
+        self._paused_until = 0.0
 
     def close(self):
         os.close(self.fd)
 
     def _xfer(self, data, flags):
+        if time.monotonic() < self._paused_until:
+            raise OSError(errno.EBUSY, "LED controller not answering; pausing before retrying")
         buf = (ctypes.c_uint8 * 12)(*data)
         msg = I2cMsg(ADDR, flags, 12, buf)
-        fcntl.ioctl(self.fd, I2C_RDWR, I2cRdwrData(ctypes.pointer(msg), 1))
+        try:
+            fcntl.ioctl(self.fd, I2C_RDWR, I2cRdwrData(ctypes.pointer(msg), 1))
+        except OSError:
+            # Back off instead of hammering a controller that stopped acknowledging
+            self._failures += 1
+            self._paused_until = time.monotonic() + (5 if self._failures >= 3 else 1)
+            raise
+        self._failures = 0
         return bytes(buf)
 
     def write(self, *data):
-        self._xfer(list(data) + [0] * (12 - len(data)), 0)
-        time.sleep(0.02)
+        wait = self._last_write + MIN_WRITE_GAP - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        try:
+            self._xfer(list(data) + [0] * (12 - len(data)), 0)
+        finally:
+            self._last_write = time.monotonic()
 
     def query(self, *data):
         self.write(*data)
@@ -146,8 +168,12 @@ class LedCtrl:
         return dict(mode=r[4], rgb=(r[5], r[6], r[7]), speed=r[8], brightness=r[9])
 
     def set(self, ch, mode, rgb, speed, brightness=0xFF):
-        # Byte 10 is the firmware's "sync all channels" flag; we always address one channel
-        self.write(0x10, 0, ch, mode, *rgb, speed, brightness, 0, 0)
+        # Byte 9 is the firmware's "sync all channels" flag; we always address one channel
+        packet = (0x10, 0, ch, mode, *rgb, speed, brightness, 0, 0)
+        if self._last_set.get(ch) == packet:
+            return
+        self.write(*packet)
+        self._last_set[ch] = packet
 
     def store(self):
         """Write the controller's current settings to its flash (Polychrome's save)."""
