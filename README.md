@@ -16,6 +16,24 @@ optional service that re-applies your lighting at boot and after resume.
 
 Check yours with `lspci -nnv -d 8086: | grep -i subsystem`.
 
+### Only ASRock's LED controller — not other brands
+
+This tool talks to the **RGB controller ASRock puts on its own Arc boards**, not to anything
+built into the Intel GPU. Other vendors' Arc cards (Gigabyte, Sparkle, Acer, Intel Limited
+Edition, …) use different RGB hardware and **will not work**, even if they are also B580s.
+
+What the ASRock controller is:
+
+- a small **ARM Cortex-M microcontroller** (very likely a Nuvoton NuMicro part, going by its
+  APROM/LDROM firmware layout; exact model unconfirmed),
+- at I2C address **`0x36`** on the GPU's own I2C bus (shown as
+  "Synopsys DesignWare I2C adapter" under the `xe` driver),
+- identified by PCI subsystem vendor **`1849`** (ASRock).
+
+`arc-rgb` only opens that bus on a card whose subsystem ID is in the table above, so it
+does nothing on unsupported cards. If you have another ASRock Arc card with RGB, please
+open an issue with the output of `lspci -nnv -d 8086:` and `i2cdetect -l`.
+
 ## Requirements
 
 - The `xe` kernel driver with I2C support for the card. Only recent kernels create the card's
