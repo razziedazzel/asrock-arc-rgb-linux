@@ -18,9 +18,12 @@ Check yours with `lspci -nnv -d 8086: | grep -i subsystem`.
 
 ## Requirements
 
-- The `xe` kernel driver (it exposes the card's own I2C adapter; recent kernels).
+- The `xe` kernel driver with I2C support for the card. Only recent kernels create the card's
+  I2C adapter; check with `i2cdetect -l` (from `i2c-tools`) for a
+  "Synopsys DesignWare I2C adapter". Tested on kernel 7.2. On Linux Mint / Ubuntu LTS you will
+  likely need an HWE or mainline kernel.
 - Python 3 (standard library only for the CLI).
-- For the app: GTK 4 and libadwaita ≥ 1.6 with PyGObject
+- For the app: GTK 4.12+ and libadwaita 1.5+ with PyGObject (Ubuntu 24.04 / Mint 22 or newer)
   (Fedora: `python3-gobject gtk4 libadwaita`; Debian/Ubuntu: `python3-gi gir1.2-gtk-4.0 gir1.2-adw-1`).
 
 ## Install

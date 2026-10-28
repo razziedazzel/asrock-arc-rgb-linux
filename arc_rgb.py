@@ -73,7 +73,11 @@ def find_bus(wait=0.0):
             if (vendor, device) in SUPPORTED_SUBSYS and os.path.exists(dev):
                 return dev
         if time.monotonic() >= deadline:
-            raise NoCardError("No supported ASRock Arc card with an xe I2C adapter found.")
+            raise NoCardError(
+                "No supported ASRock Arc card with an xe I2C adapter found. Check the card is "
+                "listed in the README, that it uses the xe driver, that your kernel is recent "
+                "enough to expose its I2C adapter (look for 'Synopsys DesignWare I2C adapter' "
+                "in `i2cdetect -l`), and that the i2c-dev module is loaded.")
         time.sleep(0.5)
 
 

@@ -115,14 +115,14 @@ class Window(Adw.ApplicationWindow):
         # ---- actions ----
         actions = Adw.PreferencesGroup()
         page.add(actions)
-        off = Adw.ButtonRow(title="Turn off")
-        off.connect("activated", lambda *_: self.set_mode_everywhere(0))
-        factory = Adw.ButtonRow(title="Factory effect")
-        factory.connect("activated", self.on_factory)
-        self.store_row = Adw.ButtonRow(title="Store on card…")
-        self.store_row.connect("activated", self.on_store)
-        for r in (off, factory, self.store_row):
-            actions.add(r)
+        # Plain activatable rows rather than Adw.ButtonRow, which needs libadwaita 1.6
+        for title, handler in (("Turn off", lambda *_: self.set_mode_everywhere(0)),
+                               ("Factory effect", self.on_factory),
+                               ("Store on card…", self.on_store)):
+            row = Adw.ActionRow(title=title, activatable=True)
+            row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+            row.connect("activated", handler)
+            actions.add(row)
 
         view.set_content(page)
         self.toasts.set_child(view)
