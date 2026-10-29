@@ -65,6 +65,10 @@ apply unchanged.
   same controller has stopped responding during rapid changes (OpenRGB !3735), where a 15 ms
   gap was adopted — matching the 15.6 ms redraw time. Whether the host waits out the
   stretching may be the difference; that hasn't been tested.
+- **Streaming colours one channel at a time flickers.** Sending Static (`0x01`) packets to a
+  single channel ~12 times a second to fade it makes it flicker on the B580 (**tested**), as
+  reported for the RX 9070 XT in !3735. For smooth host-driven colour, use the all-channel mode
+  `0x11` (one colour for the whole card).
 - Bytes 0–1 of every packet are a little-endian 16-bit command, so **byte 1 must be `00`**.
 
 ## 3. Channels (zones)
