@@ -101,6 +101,27 @@ Pick a zone (or all), effect, colour, brightness and speed — changes show on t
 immediately. **Save** keeps the setting for the boot/resume service; the
 **Keep my lighting** section has the service switch and **Store on card**.
 
+## Music mode
+
+The app's **Music** section makes the lights follow what your PC is playing. Set a zone's
+Effect to **Music** (for Pulse brightness, choose it under "All zones"), then turn on
+**React to music**.
+
+- **Pulse brightness:** one colour for the whole card whose brightness follows the music,
+  with an optional **accent colour** that flashes on hard hits.
+- **Card music effect:** the controller's own music effect, fed the live level.
+- **Follow** a frequency range (sub-bass, bass, low-mid, vocals, snare, hi-hats or a custom
+  range in Hz), and let **hard hits** listen to a different range, e.g. pulse with the kick
+  and flash on the snare.
+- **Sensitivity**, **Threshold** (lights stay off below it), **Hard hit** and **Latency**
+  (Normal / Low) to tune it.
+
+It runs as a background user service (`arc-rgb-music.service`), so it keeps going after you
+close the app and starts again at login while **React to music** is on. Settings are saved
+automatically to `~/.config/arc-rgb/music.json`. It only measures loudness per frequency band
+from your default audio output (via `parec`); no audio is recorded or stored. Needs
+`python3-numpy` and `pulseaudio-utils` (installed automatically as recommended packages).
+
 ## How it works
 
 The LED controller is a small Nuvoton-family microcontroller at I2C address `0x36` on the
@@ -117,7 +138,6 @@ controller firmware it ships. No ASRock software or firmware is included in this
 - Lighting is per zone. The LEDs are individually addressable in hardware, but the
   controller firmware offers no per-LED command; per-LED patterns come from its built-in
   effects.
-- Music mode needs the host to stream an audio level; not implemented yet.
 - Fan control is not done by this controller (it's in the GPU firmware), so it isn't here.
 
 ## Building packages

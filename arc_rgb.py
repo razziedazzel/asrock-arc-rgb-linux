@@ -19,7 +19,7 @@ import subprocess
 import sys
 import time
 
-__version__ = "0.2.3"
+__version__ = "0.3.0"
 
 ADDR = 0x36
 I2C_RDWR = 0x0707

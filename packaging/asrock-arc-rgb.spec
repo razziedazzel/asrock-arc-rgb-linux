@@ -7,6 +7,8 @@ License:        MIT
 URL:            https://github.com/razziedazzel/asrock-arc-rgb-linux
 BuildArch:      noarch
 Requires:       python3, python3-gobject, gtk4, libadwaita, polkit, kmod, systemd-udev
+# Music mode (optional): FFT and audio capture
+Recommends:     python3-numpy, pulseaudio-utils
 
 # Pure Python with a pinned shebang; no byte-compiling into the payload
 %global __brp_python_bytecompile %{nil}
@@ -16,7 +18,8 @@ Requires:       python3, python3-gobject, gtk4, libadwaita, polkit, kmod, system
 %description
 Command-line tool and GTK 4 app for the LED controller on ASRock Arc cards
 (B580 Steel Legend, A770), with an optional service that re-applies the
-saved lighting at boot and after resume.
+saved lighting at boot and after resume, and a music mode that makes the
+lights follow what the PC is playing.
 
 %install
 %{srcroot}/packaging/stage.sh %{buildroot} package %{version}
@@ -36,7 +39,9 @@ fi
 /usr/lib/arc-rgb/
 /usr/bin/arc-rgb
 /usr/bin/arc-rgb-gui
+/usr/bin/arc-rgb-music
 /usr/lib/systemd/system/arc-rgb@.service
+/usr/lib/systemd/user/arc-rgb-music.service
 /usr/lib/udev/rules.d/60-asrock-arc-rgb.rules
 /usr/lib/modules-load.d/arc-rgb.conf
 /usr/share/polkit-1/actions/io.github.razziedazzel.arcrgb.policy

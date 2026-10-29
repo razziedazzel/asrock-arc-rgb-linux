@@ -20,10 +20,12 @@ Homepage: https://github.com/razziedazzel/asrock-arc-rgb-linux
 Section: utils
 Priority: optional
 Depends: python3, python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1, kmod, udev, systemd, pkexec | policykit-1
+Recommends: python3-numpy, pulseaudio-utils
 Description: RGB lighting control for ASRock Intel Arc graphics cards
  Command-line tool and GTK 4 app for the LED controller on ASRock Arc
  cards (B580 Steel Legend, A770), with an optional service that re-applies
- the saved lighting at boot and after resume.
+ the saved lighting at boot and after resume, and a music mode that makes the
+ lights follow what the PC is playing.
 EOF
 
 cp "$SRC/packaging/postinst.sh" "$ROOT/DEBIAN/postinst"

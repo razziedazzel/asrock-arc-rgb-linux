@@ -1,0 +1,12 @@
+[Unit]
+Description=Arc RGB music mode (lights follow the PC's audio)
+After=pipewire-pulse.service
+Wants=pipewire-pulse.service
+
+[Service]
+ExecStart=@BINDIR@/arc-rgb-music run
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

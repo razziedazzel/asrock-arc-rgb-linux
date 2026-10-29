@@ -25,9 +25,10 @@ UNITDIR=$SYSDIR/systemd/system
 
 install -d "$DESTDIR$LIBDIR" "$DESTDIR$BINDIR" "$DESTDIR$UNITDIR" "$DESTDIR$UDEVDIR" \
     "$DESTDIR$SYSDIR/modules-load.d" "$DESTDIR/usr/share/polkit-1/actions" \
-    "$DESTDIR$PREFIX/share/applications" "$DESTDIR$PREFIX/share/icons/hicolor/scalable/apps"
+    "$DESTDIR$PREFIX/share/applications" "$DESTDIR$PREFIX/share/icons/hicolor/scalable/apps" \
+    "$DESTDIR$PREFIX/lib/systemd/user"
 
-for f in arc_rgb.py arc_rgb_gui.py; do
+for f in arc_rgb.py arc_rgb_gui.py arc_rgb_music.py; do
     # Pin the interpreter (-B: no root-owned __pycache__ when run via pkexec) and stamp the version
     sed -e '1s|^#!.*|#!/usr/bin/python3 -B|' \
         -e "s|^__version__ = .*|__version__ = \"$VERSION\"|" \
@@ -36,13 +37,16 @@ for f in arc_rgb.py arc_rgb_gui.py; do
 done
 ln -sf ../lib/arc-rgb/arc_rgb.py "$DESTDIR$BINDIR/arc-rgb"
 ln -sf ../lib/arc-rgb/arc_rgb_gui.py "$DESTDIR$BINDIR/arc-rgb-gui"
+ln -sf ../lib/arc-rgb/arc_rgb_music.py "$DESTDIR$BINDIR/arc-rgb-music"
 
 sed "s|@BINDIR@|$BINDIR|g" "$SRC/packaging/arc-rgb@.service.in" > "$DESTDIR$UNITDIR/arc-rgb@.service"
+# Music mode runs as a systemd user service (started from the app's "React to music" switch)
+sed "s|@BINDIR@|$BINDIR|g" "$SRC/packaging/arc-rgb-music.service.in" > "$DESTDIR$PREFIX/lib/systemd/user/arc-rgb-music.service"
 sed "s|@LIBDIR@|$LIBDIR|g" "$SRC/packaging/io.github.razziedazzel.arcrgb.policy.in" \
     > "$DESTDIR/usr/share/polkit-1/actions/io.github.razziedazzel.arcrgb.policy"
 install -m 0644 "$SRC/packaging/60-asrock-arc-rgb.rules" "$DESTDIR$UDEVDIR/60-asrock-arc-rgb.rules"
 echo i2c-dev > "$DESTDIR$SYSDIR/modules-load.d/arc-rgb.conf"
 install -m 0644 "$SRC/packaging/$APP_ID.desktop" "$DESTDIR$PREFIX/share/applications/$APP_ID.desktop"
 install -m 0644 "$SRC/packaging/$APP_ID.svg" "$DESTDIR$PREFIX/share/icons/hicolor/scalable/apps/$APP_ID.svg"
-chmod 0644 "$DESTDIR$UNITDIR/arc-rgb@.service" "$DESTDIR/usr/share/polkit-1/actions/io.github.razziedazzel.arcrgb.policy" \
+chmod 0644 "$DESTDIR$UNITDIR/arc-rgb@.service" "$DESTDIR$PREFIX/lib/systemd/user/arc-rgb-music.service" "$DESTDIR/usr/share/polkit-1/actions/io.github.razziedazzel.arcrgb.policy" \
     "$DESTDIR$SYSDIR/modules-load.d/arc-rgb.conf"

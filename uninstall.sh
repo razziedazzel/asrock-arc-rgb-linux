@@ -7,7 +7,8 @@ set -e
 SRC=$(cd "$(dirname "$0")" && pwd)
 sh "$SRC/packaging/prerm.sh"
 rm -rf /usr/local/lib/arc-rgb
-rm -f /usr/local/bin/arc-rgb /usr/local/bin/arc-rgb-gui \
+rm -f /usr/local/bin/arc-rgb /usr/local/bin/arc-rgb-gui /usr/local/bin/arc-rgb-music \
+      /usr/local/lib/systemd/user/arc-rgb-music.service \
       /etc/systemd/system/arc-rgb@.service \
       /etc/udev/rules.d/60-asrock-arc-rgb.rules \
       /etc/modules-load.d/arc-rgb.conf \
