@@ -49,6 +49,22 @@ apply unchanged.
   the documented length can hold stale data. **tested**
 - Timing that works reliably: wait **≥ 20 ms after each write** and a further **~30 ms**
   before reading a reply. **tested**
+- **The controller limits its own write rate.** It holds the bus (I2C clock stretching) while
+  it redraws, so a write only completes once the previous command has been processed.
+  Measured on a B580 over the `xe` DesignWare bus (**tested**):
+
+  | Packet | Time per write when sent back to back | Max rate |
+  |---|---|---|
+  | `0x10` for one channel (measured with a Music-mode packet) | ~0.4 ms | not limited in practice |
+  | `0x10` with mode `0x11` (all channels at once) | first ~0.4 ms, then **~15.6 ms** each | **~64 per second** |
+  | 12-byte read | ~0.3 ms | |
+
+  A stress test sent changing `0x11` colours for 10 s each at 20, 33, 66, 100 and 200 writes/s
+  and with no delay at all. From 66/s up every step settles at ~64/s because of the stretching:
+  about 2,600 writes at the ceiling, every readback correct, **no lock-up**. On an RX 9070 XT under Windows the
+  same controller has stopped responding during rapid changes (OpenRGB !3735), where a 15 ms
+  gap was adopted — matching the 15.6 ms redraw time. Whether the host waits out the
+  stretching may be the difference; that hasn't been tested.
 - Bytes 0–1 of every packet are a little-endian 16-bit command, so **byte 1 must be `00`**.
 
 ## 3. Channels (zones)
