@@ -80,7 +80,7 @@ values **per channel**; per-LED patterns come from the built-in effects.
 | 7 | `SPEED` | 0–255, **higher = slower** (effect steps every `SPEED/10 + 5` frames). Factory `0x80` |
 | 8 | `BRIGHT` | 0–255, scales the colour in **effects** (e.g. Breathing: **tested**). **Ignored in Static** (**tested**: `0x33` stored and read back, LEDs stayed at full brightness). ASRock's app always sends `0xFF` |
 | 9 | `SYNC` | `0` = this channel only. `1` = firmware applies the effect to all channels (**firmware**) |
-| 10 | `MUSIC` | audio level for mode 6 (Music) only; host must keep sending it (**firmware**, meaning of scale unknown) |
+| 10 | `MUSIC` | audio level for mode 6 (Music) only. The host has to keep sending it: streaming levels at ~4 Hz visibly changes the LEDs and a 255/0 alternation makes them flash (**tested**). A single packet per level shows little. Each channel needs its own packet, and the packet's RGB is not stored (the channel keeps its previous colour). Exact level-to-light mapping unknown |
 
 Takes effect immediately; lost on power-off unless stored (§4.5).
 
@@ -149,7 +149,7 @@ it in a loop.
 | 3 | Strobe (**tested**) | ✓ | 12 | Neon | ✓ |
 | 4 | Cycling | ✓ | 13 | Water | ✓ |
 | 5 | Random | ✓ | 14 | Rainbow | ✓ |
-| 6 | Music (host sends level) | | 15 | Rainbow2 (factory default) | ✓ |
+| 6 | Music (host streams the level, see §4.1) | | 15 | Rainbow2 (factory default) | ✓ |
 | 7 | Wave | ✓ | | | |
 | 8 | Spring | ✓ | | | |
 
@@ -213,7 +213,7 @@ int get_channel(int fd, int ch, unsigned char reply[12]) {
 
 ## 7. Open questions
 
-- Settings sub-commands 6, 8, 9 and 10, and the scale of the Music-mode level byte.
+- Settings sub-commands 6, 8, 9 and 10, and exactly how the Music-mode level maps to the lighting.
 - Whether the A770 boards use the same channel numbers.
 - `SYNC = 1` and `0xE1` have not yet been exercised on hardware.
 
